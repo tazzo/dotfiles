@@ -1,35 +1,41 @@
 #!/bin/bash
 
 # infisical-unlock.sh
-# Script helper per sbloccare l'ambiente TazLab
+# Script per autenticazione e sblocco segreti TazLab
 
 echo "🔐 == TazLab Zero-Trust Unlock =="
 
-# 1. Login (se necessario)
+# 1. Login
 if ! infisical user get > /dev/null 2>&1; then
     echo "🔑 Avvio login Infisical EU..."
     infisical login --domain https://eu.infisical.com/api
-else
-    echo "✅ Già loggato."
 fi
 
-# 2. Esecuzione Setup (che ora scaricherà i segreti perché siamo loggati)
-SETUP_SCRIPT="$HOME/workspaces/tazlab-k8s/.devcontainer/setup-runtime.sh"
+# 2. Recupero Segreti
+echo "🚀 Recupero segreti da Infisical Cloud (Env: dev)..."
+TMP_AGE=$(infisical secrets get SOPS_AGE_KEY --env dev --plain --silent 2>/dev/null)
+TMP_KUBE=$(infisical secrets get KUBECONFIG_CONTENT --env dev --plain --silent 2>/dev/null)
+TMP_TALOS=$(infisical secrets get TALOSCONFIG_CONTENT --env dev --plain --silent 2>/dev/null)
 
-# Fallback path
-if [ ! -f "$SETUP_SCRIPT" ] && [ -f ".devcontainer/setup-runtime.sh" ]; then
-    SETUP_SCRIPT=".devcontainer/setup-runtime.sh"
-fi
-
-if [ -f "$SETUP_SCRIPT" ]; then
-    bash "$SETUP_SCRIPT"
+if [[ $TMP_AGE == AGE-SECRET-KEY-* ]]; then
+    echo "$TMP_AGE" > /tmp/age.key
+    echo "$TMP_KUBE" > /tmp/kubeconfig
+    echo "$TMP_TALOS" > /tmp/talosconfig
+    chmod 600 /tmp/age.key /tmp/kubeconfig /tmp/talosconfig
     
-    echo ""
-    echo "🎉 == PRONTO =="
-    echo "Digita questo per attivare la shell corrente:"
-    echo "  source ~/.cluster-secrets"
-    echo ""
+    # Generiamo il file delle variabili
+    cat << EOF > "$HOME/.tazlab-env"
+# --- TAZLAB CLUSTER SECRETS ---
+export SOPS_AGE_KEY_FILE="/tmp/age.key"
+export KUBECONFIG="/tmp/kubeconfig"
+export TALOSCONFIG="/tmp/talosconfig"
+EOF
+    chmod 600 "$HOME/.tazlab-env"
+    
+    echo "✅ Segreti scaricati in RAM."
+    echo "🔗 Per attivare: source ~/.tazlab-env (o usa l'alias 'unlock')"
+    source "$HOME/.tazlab-env"
 else
-    echo "❌ Errore: Script di setup non trovato."
+    echo "❌ Errore: Recupero fallito. Verifica il login."
     exit 1
 fi
