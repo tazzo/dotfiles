@@ -164,3 +164,7 @@ export PATH="$HOME/dotfiles/scripts:$PATH"
 
 # Local Secrets (Not Versioned)
 [ -f ~/.bash_local ] && source ~/.bash_local
+
+# --- TAZLAB CLUSTER UNLOCK ---
+alias unlock='bash .devcontainer/setup-runtime.sh && [ -f $HOME/.tazlab-env ] && source $HOME/.tazlab-env'
+[ -f "$HOME/.tazlab-env" ] && source "$HOME/.tazlab-env"
