@@ -1,34 +1,35 @@
 #!/bin/bash
 
 # infisical-unlock.sh
-# Script per autenticazione e setup ambiente TazLab
+# Script helper per sbloccare l'ambiente TazLab
 
-echo "🔐 == TazLab Zero-Trust Login =="
-echo "Avvio procedura di login su Infisical EU..."
+echo "🔐 == TazLab Zero-Trust Unlock =="
 
-# 1. Login Interattivo
-infisical login --domain https://eu.infisical.com/api
+# 1. Login (se necessario)
+if ! infisical user get > /dev/null 2>&1; then
+    echo "🔑 Avvio login Infisical EU..."
+    infisical login --domain https://eu.infisical.com/api
+else
+    echo "✅ Già loggato."
+fi
 
-# 2. Esecuzione Setup (Scarica le chiavi in RAM)
-# Cerchiamo lo script nel path standard di DevPod
+# 2. Esecuzione Setup (che ora scaricherà i segreti perché siamo loggati)
 SETUP_SCRIPT="$HOME/workspaces/tazlab-k8s/.devcontainer/setup-runtime.sh"
 
-# Fallback se siamo nella cartella corrente
+# Fallback path
 if [ ! -f "$SETUP_SCRIPT" ] && [ -f ".devcontainer/setup-runtime.sh" ]; then
     SETUP_SCRIPT=".devcontainer/setup-runtime.sh"
 fi
 
 if [ -f "$SETUP_SCRIPT" ]; then
-    echo "🚀 Login effettuato. Scarico i segreti in RAM..."
     bash "$SETUP_SCRIPT"
     
     echo ""
-    echo "✅ == PRONTO =="
-    echo "I segreti sono in /tmp. Per attivarli in questa shell, digita:"
+    echo "🎉 == PRONTO =="
+    echo "Digita questo per attivare la shell corrente:"
     echo "  source ~/.cluster-secrets"
     echo ""
 else
-    echo "❌ Errore: Non trovo lo script di setup ($SETUP_SCRIPT)"
-    echo "Assicurati di essere nel workspace tazlab-k8s o che il path sia corretto."
+    echo "❌ Errore: Script di setup non trovato."
     exit 1
 fi
