@@ -5,11 +5,9 @@
 
 echo "🔐 == TazLab Zero-Trust Unlock =="
 
-# 1. Login
-if ! infisical user get > /dev/null 2>&1; then
-    echo "🔑 Avvio login Infisical EU..."
-    infisical login --domain https://eu.infisical.com/api
-fi
+# 1. Login (Sempre eseguito per garantire token fresco)
+echo "🔑 Avvio login Infisical EU..."
+infisical login --domain https://eu.infisical.com/api
 
 # 2. Recupero Segreti
 echo "🚀 Recupero segreti da Infisical Cloud (Env: dev)..."
